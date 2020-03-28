@@ -57,6 +57,7 @@ listData.config(yscrollcommand=scroll_y.set)
 
 #--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
 strsumroww = IntVar()
+IntID = IntVar()
 
 #--- ลบข้อมูลใน LISTBOX ---#
 def deletedata():
@@ -106,6 +107,13 @@ def deletequeue(queuedate,ID):
         strsumroww.set(0)
         listData.delete(0,END)
 
+#--- แก้ไขสถานะการชำระเงิน ---#
+def updatestatus(queuedate,numberID):
+    queueID = queuedate + str(numberID)
+    sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
+    cur.execute(sql, [queueID])
+    con.commit()
+    queryqueue(queuedate)
 
 #--- แสดงคิวจากวันที่ ---#
 def queryqueue(queuedate):
@@ -121,15 +129,16 @@ def queryqueue(queuedate):
         numberID = 0
     else:
         numberID = int(IDs[0]) % int(queuedate+"0")
+    IntID.set(numberID)
     Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-    comboID = ttk.Combobox(fm12, value=list(range(1,numberID+1)), width=2, font="tahoma 20")
-    comboID.grid(row=1, column=1, padx=5)
-    comboID.set(numberID)
-    comboID.bind('<<ComboboxSelected>>',lambda e: querydata(queuedate,comboID.get()))
-    querydata(queuedate,comboID.get())
-    bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,comboID.get()), font="tahoma 14", cursor = 'hand2')
+    Entry(fm12, textvariable=IntID, width=2, font="tahoma 20").grid(row=1, column=1, padx=5)
+    bt_pay = Button(fm2, text="ชำระเงิน", command= lambda: updatestatus(queuedate,numberID), font="tahoma 16", cursor = 'hand2')
+    bt_pay.grid(row=1, column=2, padx=5)
+    querydata(queuedate,numberID)
+    bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
     bt.grid(row=3, column=0)
     if(int(numberID) ==0):
+        bt_pay.config(state=DISABLED)
         bt.config(state=DISABLED)
 
 
@@ -363,10 +372,8 @@ Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", curs
 
 
 #--- ส่วนแสดง fm12 ---#
-Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=10, padx=5)
-comboID = ttk.Combobox(fm12, value=list(range(0,0)), width=2, font="tahoma 20")
-comboID.grid(row=1, column=1, padx=5)
-comboID.set(0)
+Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
+Entry(fm12, textvariable=IntID, font="tahoma 20").grid(row=1, column=1 , padx=5)
 Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
 Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5).grid(row=2, column=1, pady=10)
 Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)

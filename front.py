@@ -133,8 +133,8 @@ class Showvalue:
         if(ch == 1):
             if(self.number != 0):
                 queuedate1 = queuedate + str(self.queue)
-                sql = 'INSERT INTO coffeeorder VALUES (?,?,?,?,?)'
-                cur.execute(sql,[queuedate1, self.name, self.number, self.price*self.number, queuedate])
+                sql = 'INSERT INTO coffeeorder VALUES (?,?,?,?,?,?)'
+                cur.execute(sql,[queuedate1, self.name, self.number, self.price*self.number, queuedate, 0])
                 con.commit()
             sql = 'UPDATE coffeeMenu SET numberMenu = 0'
             cur.execute(sql)
