@@ -1,4 +1,5 @@
 import sqlite3
+import multiprocessing 
 from datetime import datetime
 from tkinter import *
 from tkinter import ttk
@@ -6,6 +7,7 @@ from tkinter import messagebox
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+
 
 datex = datetime.now()
 datenow = str(datex.day) + str(datex.month) + str(datex.year+543)
@@ -17,11 +19,8 @@ cur = con.cursor()
 
 #----ส่วนออกแบบLayOut----#
 window = Tk()
-window.overrideredirect(True)
-
-Label(window, text="โปรแกรมหลังร้านกาแฟ", bg="#3e1900", fg="white", width=100, font="tahoma 12").grid(row=0, column=0, columnspan=2, sticky=NW)
-Button(window,text="ปิดโปรแกรม", bg="red", fg="white", width=10, font="tahoma 12", command=window.destroy, cursor="hand2").grid(row=0, column=1, sticky=NE)
-
+window.resizable(0, 0)
+window.title("โปรแกรมหลังร้านกาแฟ")
 
 noteStyler = ttk.Style()
 noteStyler.configure("TNotebook")
@@ -75,10 +74,9 @@ def deletedata2():
 #--- คิวรีข้อมูลจากคิว ---#
 def querydata(queuedate,ID,queuestatus):
     global strsumroww
-    bt_pay = Button(fm12, text="ชำระเงิน", command= lambda: updatestatus(queuedate,ID), font="tahoma 16", cursor = 'hand2')
-    bt_pay.grid(row=1, column=2, padx=5)
+    bt_pay.config(command= lambda: updatestatus(queuedate,ID), state=NORMAL)
     if(int(queuestatus[int(ID)-1][1]) == 1):
-            bt_pay.config(state=DISABLED, text="ชำระเงิน")
+            bt_pay.config(state=DISABLED)
 
     queuedateID = queuedate + str(ID)
     sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
@@ -249,7 +247,6 @@ def querysummary():
     Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(),xlabelplot,ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
 Button(ffm3, text="รีเฟรชข้อมูล", command= querysummary, font="tahoma 16", cursor = 'hand2').grid(row=5, column=0, pady=20)
 querysummary()
-
 
 #--- ส่วนแสดงผล Frame 4 ---#
 ffm4 = Frame(frame_tab4)

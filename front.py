@@ -19,10 +19,8 @@ else:
 
 #----ส่วนออกแบบLayOut----#
 window=Tk()
-window.overrideredirect(True)
-
-Label(window, text="โปรแกรมหน้าร้านกาแฟ", bg="#3e1900", fg="white", width=100, font="tahoma 12").grid(row=0, column=0, columnspan=2, sticky=NW)
-Button(window,text="ปิดโปรแกรม", bg="red", fg="white", width=10, font="tahoma 12", command=window.destroy, cursor="hand2").grid(row=0, column=1, sticky=NE)
+window.resizable(0, 0)
+window.title("โปรแกรมหน้าร้านกาแฟ")
 
 fm1 = Frame(window)
 fm1.grid(row=1, column=0, pady=10)
