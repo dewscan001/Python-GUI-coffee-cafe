@@ -57,7 +57,6 @@ listData.config(yscrollcommand=scroll_y.set)
 
 #--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
 strsumroww = IntVar()
-IntID = IntVar()
 
 #--- ลบข้อมูลใน LISTBOX ---#
 def deletedata():
@@ -74,8 +73,13 @@ def deletedata2():
 
 
 #--- คิวรีข้อมูลจากคิว ---#
-def querydata(queuedate,ID):
+def querydata(queuedate,ID,queuestatus):
     global strsumroww
+    bt_pay = Button(fm12, text="ชำระเงิน", command= lambda: updatestatus(queuedate,ID), font="tahoma 16", cursor = 'hand2')
+    bt_pay.grid(row=1, column=2, padx=5)
+    if(int(queuestatus[int(ID)-1][1]) == 1):
+            bt_pay.config(state=DISABLED, text="ชำระเงิน")
+
     queuedateID = queuedate + str(ID)
     sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
     cur.execute(sql, [queuedateID])
@@ -94,7 +98,6 @@ def querydata(queuedate,ID):
     else:
         strsumroww.set(sumrow[0])
 
-
 #--- ลบคิวออกจากฐานข้อมูล ---#
 def deletequeue(queuedate,ID): 
     global strsumroww
@@ -110,36 +113,44 @@ def deletequeue(queuedate,ID):
 #--- แก้ไขสถานะการชำระเงิน ---#
 def updatestatus(queuedate,numberID):
     queueID = str(queuedate) + str(numberID)
-    sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
-    cur.execute(sql, [queueID])
-    con.commit()
-    queryqueue(queuedate)
+    bt_update = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {numberID} ในวันที่ {queuedate}')
+    if(bt_update):
+        sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
+        cur.execute(sql, [queueID])
+        con.commit()
+        queryqueue(queuedate)
 
 #--- แสดงคิวจากวันที่ ---#
 def queryqueue(queuedate):
     global strsumroww
     strsumroww.set(0)
-    sql = 'SELECT ID FROM coffeeorder WHERE Date = ? AND status = ?'
-    cur.execute(sql, [queuedate,0])
-    IDs = cur.fetchone()
-
-    if(IDs == None):
+    sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
+    cur.execute(sql, [queuedate])
+    IDs = cur.fetchall()
+    IDlast = len(IDs)
+    ComboID = ttk.Combobox(fm12, values=list(range(1,IDlast+1)), width=3, font="tahoma 20")
+    ComboID.grid(row=1, column=1, padx=5)
+    
+    if(IDs == []):
         deletedata()
         listData.insert(END,"ไม่มีข้อมูล")
+        ComboID.set(0)
         numberID = 0
+
     else:
-        numberID = int(IDs[0]) % int(queuedate+"0")
-    IntID.set(numberID)
-    Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-    Entry(fm12, textvariable=IntID, width=3, font="tahoma 20").grid(row=1, column=1, padx=5)
-    bt_pay = Button(fm12, text="ชำระเงิน", command= lambda: updatestatus(queuedate,numberID), font="tahoma 16", cursor = 'hand2')
-    bt_pay.grid(row=1, column=2, padx=5)
-    querydata(queuedate,numberID)
-    bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
-    bt.grid(row=3, column=0)
-    if(int(numberID) ==0):
-        bt_pay.config(state=DISABLED)
-        bt.config(state=DISABLED)
+        for i in IDs:
+            if(i[1] == 0):
+                break
+        numberID = int(i[0]) % int(queuedate+"0")
+        ComboID.set(numberID)
+        numberID = ComboID.get()
+        ComboID.bind('<<ComboboxSelected>>', lambda e : querydata(queuedate,ComboID.get(),IDs))
+        querydata(queuedate,ComboID.get(),IDs)
+        bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
+        bt.grid(row=3, column=0)
+        if(int(numberID) ==0):
+            bt.config(state=DISABLED)
+            bt_pay.config(state=DISABLED, text="ชำระเงิน")
 
 
 #--- เลือกวันเดือนปี ---#
@@ -171,7 +182,7 @@ def plotpie(xplot,yplot,xplode):
     thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode)
     plt.setp(raikan+kha,fontproperties=fp)
     plt.show()
-
+    
 
 #--- Frame ในแท็บสอง ---#
 ffm2 = Frame(frame_tab2)
@@ -373,8 +384,9 @@ Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", curs
 
 #--- ส่วนแสดง fm12 ---#
 Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-Entry(fm12, textvariable=IntID, font="tahoma 20", width=3).grid(row=1, column=1 , padx=5)
-Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED).grid(row=1, column=2 , padx=5)
+Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, column=1 , padx=5)
+bt_pay = Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED)
+bt_pay.grid(row=1, column=2 , padx=5)
 Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
 Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5).grid(row=2, column=1, pady=10)
 Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
