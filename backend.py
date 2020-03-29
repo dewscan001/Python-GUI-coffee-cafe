@@ -109,7 +109,7 @@ def deletequeue(queuedate,ID):
 
 #--- แก้ไขสถานะการชำระเงิน ---#
 def updatestatus(queuedate,numberID):
-    queueID = queuedate + str(numberID)
+    queueID = str(queuedate) + str(numberID)
     sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
     cur.execute(sql, [queueID])
     con.commit()
@@ -119,8 +119,8 @@ def updatestatus(queuedate,numberID):
 def queryqueue(queuedate):
     global strsumroww
     strsumroww.set(0)
-    sql = 'SELECT ID FROM coffeeorder WHERE Date = ? ORDER BY ID DESC '
-    cur.execute(sql, [queuedate])
+    sql = 'SELECT ID FROM coffeeorder WHERE Date = ? AND status = ?'
+    cur.execute(sql, [queuedate,0])
     IDs = cur.fetchone()
 
     if(IDs == None):
@@ -131,8 +131,8 @@ def queryqueue(queuedate):
         numberID = int(IDs[0]) % int(queuedate+"0")
     IntID.set(numberID)
     Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-    Entry(fm12, textvariable=IntID, width=2, font="tahoma 20").grid(row=1, column=1, padx=5)
-    bt_pay = Button(fm2, text="ชำระเงิน", command= lambda: updatestatus(queuedate,numberID), font="tahoma 16", cursor = 'hand2')
+    Entry(fm12, textvariable=IntID, width=3, font="tahoma 20").grid(row=1, column=1, padx=5)
+    bt_pay = Button(fm12, text="ชำระเงิน", command= lambda: updatestatus(queuedate,numberID), font="tahoma 16", cursor = 'hand2')
     bt_pay.grid(row=1, column=2, padx=5)
     querydata(queuedate,numberID)
     bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
@@ -373,7 +373,8 @@ Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", curs
 
 #--- ส่วนแสดง fm12 ---#
 Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-Entry(fm12, textvariable=IntID, font="tahoma 20").grid(row=1, column=1 , padx=5)
+Entry(fm12, textvariable=IntID, font="tahoma 20", width=3).grid(row=1, column=1 , padx=5)
+Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED).grid(row=1, column=2 , padx=5)
 Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
 Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5).grid(row=2, column=1, pady=10)
 Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
