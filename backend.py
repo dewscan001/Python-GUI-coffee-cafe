@@ -1,5 +1,4 @@
 import sqlite3
-import multiprocessing 
 from datetime import datetime
 from tkinter import *
 from tkinter import ttk
@@ -109,12 +108,12 @@ def deletequeue(queuedate,ID):
         listData.delete(0,END)
 
 #--- แก้ไขสถานะการชำระเงิน ---#
-def updatestatus(queuedate,numberID):
-    queueID = str(queuedate) + str(numberID)
-    bt_update = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {numberID} ในวันที่ {queuedate}')
+def updatestatus(queuedate,ID):
+    queuedateID = str(queuedate) + str(ID)
+    bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {queuedate}')
     if(bt_update):
         sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
-        cur.execute(sql, [queueID])
+        cur.execute(sql, [queuedateID])
         con.commit()
         queryqueue(queuedate)
 
@@ -385,7 +384,7 @@ Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, col
 bt_pay = Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED)
 bt_pay.grid(row=1, column=2 , padx=5)
 Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
-Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5).grid(row=2, column=1, pady=10)
+Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5, state=DISABLED).grid(row=2, column=1, pady=10)
 Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
 
 
