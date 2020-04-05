@@ -71,9 +71,9 @@ def deletedata2():
 
 
 #--- คิวรีข้อมูลจากคิว ---#
-def querydata(queuedate,ID,queuestatus):
+def querydata(queuedate, ID, queuestatus):
     global strsumroww
-    bt_pay.config(command= lambda: updatestatus(queuedate,ID), state=NORMAL)
+    bt_pay.config(command=lambda: updatestatus(queuedate,ID), state=NORMAL)
     if(int(queuestatus[int(ID)-1][1]) == 1):
             bt_pay.config(state=DISABLED)
 
@@ -96,7 +96,7 @@ def querydata(queuedate,ID,queuestatus):
         strsumroww.set(sumrow[0])
 
 #--- ลบคิวออกจากฐานข้อมูล ---#
-def deletequeue(queuedate,ID): 
+def deletequeue(queuedate, ID): 
     global strsumroww
     queuedateID = queuedate + str(ID)
     bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {queuedate}')
@@ -108,7 +108,7 @@ def deletequeue(queuedate,ID):
         listData.delete(0,END)
 
 #--- แก้ไขสถานะการชำระเงิน ---#
-def updatestatus(queuedate,ID):
+def updatestatus(queuedate, ID):
     queuedateID = str(queuedate) + str(ID)
     bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {queuedate}')
     if(bt_update):
@@ -130,7 +130,7 @@ def queryqueue(queuedate):
     
     if(IDs == []):
         deletedata()
-        listData.insert(END,"ไม่มีข้อมูล")
+        listData.insert(END, "ไม่มีข้อมูล")
         ComboID.set(0)
         numberID = 0
 
@@ -143,9 +143,9 @@ def queryqueue(queuedate):
         numberID = ComboID.get()
         ComboID.bind('<<ComboboxSelected>>', lambda e : querydata(queuedate,ComboID.get(),IDs))
         querydata(queuedate,ComboID.get(),IDs)
-        bt = Button(fm2, text="ลบคิว", command= lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
+        bt = Button(fm2, text="ลบคิว", command=lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
         bt.grid(row=3, column=0)
-        if(int(numberID) ==0):
+        if(int(numberID) == 0):
             bt.config(state=DISABLED)
             bt_pay.config(state=DISABLED, text="ชำระเงิน")
 
@@ -160,9 +160,9 @@ fp = mpl.font_manager.FontProperties(family='Tahoma',size=12)
 fp1 = mpl.font_manager.FontProperties(family='Tahoma',size=20)
 
 #--- แสดงกราฟจากข้อมูล (แท่ง) ---#
-def plot(xplot,xlabelplot,ylabelplot):
-    global fp,fp1
-    xplot = np.arange(1,xplot+1)
+def plot(xplot, xlabelplot, ylabelplot):
+    global fp, fp1
+    xplot = np.arange(1, xplot+1)
     yplot = ylabelplot
     ax = plt.gca(yticks=xplot) 
     ax.set_yticklabels(xlabelplot, fontproperties=fp) 
@@ -174,10 +174,10 @@ def plot(xplot,xlabelplot,ylabelplot):
     plt.show()
 
 #--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
-def plotpie(xplot,yplot,xplode):
+def plotpie(xplot, yplot, xplode):
     global fp
     thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode)
-    plt.setp(raikan+kha,fontproperties=fp)
+    plt.setp(raikan+kha, fontproperties=fp)
     plt.show()
     
 
@@ -186,7 +186,7 @@ ffm2 = Frame(frame_tab2)
 ffm2.grid(row=0, column=0, padx=55)
 
 #--- ส่วนการแสดงรายชื่อสินค้า ---#
-Label(ffm2,text='รายละเอียดการสั่งซื้อสินค้าในวันนี้', font="tahoma 20").grid(row=0,column=0, pady=20, columnspan=2)
+Label(ffm2,text='รายละเอียดการสั่งซื้อสินค้าในวันนี้', font="tahoma 20").grid(row=0, column=0, pady=20, columnspan=2)
 listDatasum1 = Listbox(ffm2, width=70, font="tahoma 16")
 listDatasum1.grid(row=2, column=0, columnspan=2)
 
@@ -210,9 +210,9 @@ def querysummaryone():
         row22 = cur.fetchone()
         yplot.append(row22[0])
         xplode.append(.2)
-        listDatasum1.insert(END,f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-    Button(ffm2, text="แสดงกราฟ", command= lambda: plotpie(xplot,yplot,xplode), cursor = 'hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
-Button(ffm2, text="รีเฟรชข้อมูล", command= querysummaryone, font="tahoma 16", cursor = 'hand2').grid(row=5, column=0, pady=20)
+        listDatasum1.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
+    Button(ffm2, text="แสดงกราฟ", command=lambda: plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
+Button(ffm2, text="รีเฟรชข้อมูล", command=querysummaryone, font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 querysummaryone()
 
 
@@ -221,7 +221,7 @@ ffm3 = Frame(frame_tab3)
 ffm3.grid(row=0, column=0, padx=55)
 
 #--- ส่วนการแสดงผลสินค้า ---#
-Label(ffm3,text='รายละเอียดการสั่งซื้อสินค้าทั้งหมด', font="tahoma 20").grid(row=0,column=0, pady=20, columnspan=2)
+Label(ffm3, text='รายละเอียดการสั่งซื้อสินค้าทั้งหมด', font="tahoma 20").grid(row=0, column=0, pady=20, columnspan=2)
 listDatasum = Listbox(ffm3, width=70, font="tahoma 16")
 listDatasum.grid(row=2, column=0, columnspan=2)
 
@@ -242,9 +242,9 @@ def querysummary():
         cur.execute(sql22, i)
         row22 = cur.fetchone()
         ylabelplot.append(row22[0])
-        listDatasum.insert(END,f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-    Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(),xlabelplot,ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
-Button(ffm3, text="รีเฟรชข้อมูล", command= querysummary, font="tahoma 16", cursor = 'hand2').grid(row=5, column=0, pady=20)
+        listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
+    Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
+Button(ffm3, text="รีเฟรชข้อมูล", command= querysummary, font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 querysummary()
 
 #--- ส่วนแสดงผล Frame 4 ---#
@@ -252,7 +252,7 @@ ffm4 = Frame(frame_tab4)
 ffm4.grid(row=0, column=0, padx=25, columnspan=2 , pady=20)
 
 #--- ส่วนแสดงเมนูสินค้า ---#
-Label(ffm4,text='เมนูสินค้าทั้งหมด', font="tahoma 20").grid(row=0,column=0, pady=20)
+Label(ffm4,text='เมนูสินค้าทั้งหมด', font="tahoma 20").grid(row=0, column=0, pady=20)
 
 ffm41 = Frame(frame_tab4)
 ffm41.grid(row=1, column=0, padx=20, pady=10)
@@ -326,7 +326,7 @@ def savedataMenu():
     if(stateokupdate):
         bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
         sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
-        cur.execute(sql, [entry_price.get(),comboCat.get(),entry_name.get()])
+        cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
         con.commit()
 
     else:
@@ -336,7 +336,7 @@ def savedataMenu():
                 j = j + 1
 
         sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
-        cur.execute(sql, [entry_name.get(),entry_price.get(),0,comboCat.get(),j])
+        cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
         con.commit()
 
     entry_clear()
@@ -355,16 +355,16 @@ def deletedataMenu():
 ffm43 = Frame(ffm42)
 ffm43.grid(row=2, column=0, columnspan=6)
 
-Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command= entry_clear , cursor = 'hand2').grid(row=3, column=0, pady=20, padx=15)
-Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command= savedataMenu, cursor = 'hand2').grid(row=3, column=2, pady=20, padx=15)
-Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command= deletedataMenu, cursor = 'hand2').grid(row=3, column=4, pady=20, padx=15)
+Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command=entry_clear, cursor='hand2').grid(row=3, column=0, pady=20, padx=15)
+Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command=savedataMenu, cursor='hand2').grid(row=3, column=2, pady=20, padx=15)
+Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
 
 
 #--- ส่วนแสดงผล fm1 ----#
 Label(fm1,text="โปรแกรมร้านกาแฟ", font='tahoma 20').grid(row=0, column=0, pady=20, columnspan=7)
 thai_month = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
 Label(fm1, text="วันที่", font="tahoma 16").grid(row=1, column=0, padx=5)
-comboday = ttk.Combobox(fm1, value=list(range(1,32)), width=2, font="tahoma 16")
+comboday = ttk.Combobox(fm1, value=list(range(1, 32)), width=2, font="tahoma 16")
 comboday.grid(row=1, column=1, padx=5)
 comboday.set(datex.day)
 Label(fm1, text="เดือน", font="tahoma 16").grid(row=1, column=2, padx=5)
@@ -375,14 +375,14 @@ Label(fm1, text="ปี พ.ศ.", font="tahoma 16").grid(row=1, column=4, padx=
 comboyear = ttk.Combobox(fm1, value=list(range(2563,2600)), width=5, font="tahoma 16")
 comboyear.grid(row=1, column=5, padx=5)
 comboyear.set(datex.year+543)
-Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", cursor = 'hand2').grid(row=1, column=6, padx=5)
+Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", cursor='hand2').grid(row=1, column=6, padx=5)
 
 
 #--- ส่วนแสดง fm12 ---#
 Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, column=1 , padx=5)
+Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, column=1, padx=5)
 bt_pay = Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED)
-bt_pay.grid(row=1, column=2 , padx=5)
+bt_pay.grid(row=1, column=2, padx=5)
 Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
 Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5, state=DISABLED).grid(row=2, column=1, pady=10)
 Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
