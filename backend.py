@@ -6,7 +6,7 @@ from tkinter import messagebox
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-
+from threading import Thread
 
 datex = datetime.now()
 datenow = str(datex.day) + str(datex.month) + str(datex.year+543)
@@ -195,25 +195,32 @@ scroll_y1.grid(row=2, column=2, sticky=N+S)
 listDatasum1.config(yscrollcommand=scroll_y.set)
 
 #---- คิวรีสรุปสินค้าวันนี้ ----#
-def querysummaryone():
-    global datenow
-    deletedata2()
-    sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder WHERE Date = ?'
-    cur.execute(sql21, [datenow])
-    xplot = cur.fetchall()
-    yplot = []
-    xplode = []
-    numlast = len(xplot)
-    for (u,i) in enumerate(xplot):
-        sql22 = 'SELECT SUM(number) FROM coffeeorder WHERE Corder = ? AND Date = ?'
-        cur.execute(sql22, [i[0],datenow])
-        row22 = cur.fetchone()
-        yplot.append(row22[0])
-        xplode.append(.2)
-        listDatasum1.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-    Button(ffm2, text="แสดงกราฟ", command=lambda: plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
-Button(ffm2, text="รีเฟรชข้อมูล", command=querysummaryone, font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
-querysummaryone()
+class querysummaryone(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+
+    def run(self):  
+        global datenow
+        deletedata2()
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder WHERE Date = ?'
+        cur.execute(sql21, [datenow])
+        xplot = cur.fetchall()
+        yplot = []
+        xplode = []
+        numlast = len(xplot)
+        for (u,i) in enumerate(xplot):
+            sql22 = 'SELECT SUM(number) FROM coffeeorder WHERE Corder = ? AND Date = ?'
+            cur.execute(sql22, [i[0],datenow])
+            row22 = cur.fetchone()
+            yplot.append(row22[0])
+            xplode.append(.2)
+            listDatasum1.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
+        Button(ffm2, text="แสดงกราฟ", command=lambda: plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
+
+process1 = querysummaryone()
+Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: process1.start(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 
 #--- Frame ในแท็บสาม ---#
@@ -230,22 +237,29 @@ scroll_y.grid(row=2, column=2, sticky=N+S)
 listDatasum.config(yscrollcommand=scroll_y.set)
 
 #--- คิวรีผลสรุปทั้งหมด ---#
-def querysummary():
-    deletedata1()
-    sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
-    cur.execute(sql21)
-    xlabelplot = cur.fetchall()
-    ylabelplot = []
-    numlast = len(xlabelplot)
-    for (u,i) in enumerate(xlabelplot):
-        sql22 = 'SELECT SUM(number) FROM coffeeorder WHERE Corder = ?'
-        cur.execute(sql22, i)
-        row22 = cur.fetchone()
-        ylabelplot.append(row22[0])
-        listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-    Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
-Button(ffm3, text="รีเฟรชข้อมูล", command= querysummary, font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
-querysummary()
+class querysummary(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+
+    def run(self):  
+        deletedata1()
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
+        cur.execute(sql21)
+        xlabelplot = cur.fetchall()
+        ylabelplot = []
+        numlast = len(xlabelplot)
+        for (u,i) in enumerate(xlabelplot):
+            sql22 = 'SELECT SUM(number) FROM coffeeorder WHERE Corder = ?'
+            cur.execute(sql22, i)
+            row22 = cur.fetchone()
+            ylabelplot.append(row22[0])
+            listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
+        Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
+
+process2 = querysummary()
+Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: process2.start(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 #--- ส่วนแสดงผล Frame 4 ---#
 ffm4 = Frame(frame_tab4)
