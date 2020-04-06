@@ -77,7 +77,7 @@ def runqueue():
         Ids = cur.fetchone()
         if Ids == None:
             break
-        
+
     queueshow()
 
 #----ส่วนด้านบนของโปรแกรม----#
@@ -193,8 +193,7 @@ class Showvalue:
 
         self.summary(tab)
 
-
-
+        
 #----ส่วนเรียกข้อมูลเพื่อแสดงข้อมูล----#
 def queryshow(s, c):
     global o
