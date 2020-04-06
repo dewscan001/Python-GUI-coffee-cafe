@@ -55,33 +55,39 @@ sumVar = IntVar()
 stateok = False
 o = []
 
+#--- ฟังก์ชันเกี่ยวกับการจัดการคิว ---#
+queueVar = IntVar()
+queue2 = 0
+queuedate = str(datex.day)+str(datex.month)+str(datex.year+543)
+
+ #---- แสดงคิว ----#
+def queueshow():
+    Label(fm12, text="คิวที่", font='tahoma 16').grid(row=0, column=0, pady=20)
+    Entry(fm12, textvariable=queueVar, font='tahoma 16', width=4, state=DISABLED).grid(row=0, column=1, padx=25, sticky=W)
+
+#----รันคิว----#
+def runqueue():
+    global queue2
+    for num in range(1, 100):
+        queueVar.set(num)
+        queue2 = num
+        ID = queuedate + str(queue2)
+        sql = 'SELECT DISTINCT(ID) FROM coffeeorder WHERE ID = ?'
+        cur.execute(sql, [ID])
+        Ids = cur.fetchone()
+        if Ids == None:
+            break
+        
+    queueshow()
+
 #----ส่วนด้านบนของโปรแกรม----#
 Label(fm1, text="โปรแกรมร้านกาแฟ", font='tahoma 20').grid(row=0, column=0, pady=20)
 Label(fm1, text=f'วัน{thai_day[weekday]} ที่ {datex.day} เดือน {thai_month[datex.month-1]} พ.ศ. {datex.year+543}', font='tahoma 20').grid(row=1, column=0, pady=50, padx=100)
+runqueue()
+
 
 #----คลาสสำหรับแสดงข้อมูลสินค้า----#
 class Showvalue:
-
-    #----รันคิว----#
-    def runqueue(self):
-        
-        for num in range(1, 100):
-            self.queueVar.set(num)
-            self.queue2 = num
-            ID = self.queuedate+str(self.queue2)
-            ID = int(ID)
-            sql = 'SELECT ID FROM coffeeorder WHERE ID = ?'
-            cur.execute(sql, [ID])
-            Ids = cur.fetchone()
-            if Ids == None:
-                break
-        self.queueshow()
-
-    #---- แสดงคิว ----#
-    def queueshow(self):
-        Label(fm12, text="คิวที่", font='tahoma 16').grid(row=0, column=0, pady=20)
-        Entry(fm12, textvariable=self.queueVar, font='tahoma 16', width=4, state=DISABLED).grid(row=0, column=1, padx=25, sticky=W)
-        self.update()
 
     def __init__(self, name, price, i):
         self.name = name
@@ -91,10 +97,6 @@ class Showvalue:
         self.intvar = IntVar()
         self.number = 0
         self.sum = 0
-        self.queueVar = IntVar()
-        self.queuedate = str(datex.day)+str(datex.month)+str(datex.year+543)
-        self.queue2 = 0
-        self.runqueue()
 
     #----อัพเดทจำนวนสินค้าในฐานข้อมูล----#
     def update(self):
@@ -124,28 +126,20 @@ class Showvalue:
     def nextqueue(self, ch):
         global sum
         global sumVar
-
+        global queue2
         if(ch == 1):
             if(self.number != 0):
-                self.queuedate1 = self.queuedate + str(self.queue2)
+                self.queuedate1 = queuedate + str(queue2)
                 sql = 'INSERT INTO coffeeorder VALUES (?,?,?,?,?,?)'
-                cur.execute(sql, [self.queuedate1, self.name, self.number, self.price*self.number, self.queuedate, 0])
+                cur.execute(sql, [self.queuedate1, self.name, self.number, self.price*self.number, queuedate, 0])
                 con.commit()
 
             sql = 'UPDATE coffeeMenu SET numberMenu = 0'
             cur.execute(sql)
             con.commit()
-            sql = 'SELECT ID FROM coffeeorder WHERE Date = ?'
-            cur.execute(sql, [self.queuedate])
-            row = cur.fetchall()
-            for i in row:
-                fqueue = i[0] % int(self.queuedate) + 1
-                self.queueVar.set(fqueue)
+        
         self.number = 0
         self.intvar.set(0)
-        sum = 0
-        sumVar.set(0)
-        self.queueshow()
 
     #---- แสดงสรุปผล ----#
     def summary(self, tab):
@@ -200,6 +194,7 @@ class Showvalue:
         self.summary(tab)
 
 
+
 #----ส่วนเรียกข้อมูลเพื่อแสดงข้อมูล----#
 def queryshow(s, c):
     global o
@@ -249,7 +244,8 @@ def setzero(changer):
         sum = 0
         sumVar.set(0)
         queryshow(stateok, changer)
-        
+        runqueue()
+
 #---- ปุ่มกด ยืนยัน/รีเซ็ต ----#
 Button(fm22, text="ยืนยัน", font="tahoma 14", command=lambda: setzero(1), width=5, cursor="hand2").grid(row=0, column=0, pady=5, padx=35)
 Button(fm22, text="รีเซ็ต", font="tahoma 14", command=lambda: setzero(2), width=5, cursor="hand2").grid(row=0, column=1, pady=5, padx=35)

@@ -1,3 +1,4 @@
+from threading import Thread
 import sqlite3
 from datetime import datetime
 from tkinter import *
@@ -6,7 +7,6 @@ from tkinter import messagebox
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-from threading import Thread
 
 datex = datetime.now()
 datenow = str(datex.day) + str(datex.month) + str(datex.year+543)
@@ -44,6 +44,43 @@ fm12.grid(row=0, column=1, padx=10, pady=10, sticky=N)
 fm2 = LabelFrame(frame_tab1)
 fm2.grid(row=1, column=0, pady=10, padx=15, sticky=N, columnspan=3)
 
+#--- เลือกวันเดือนปี ---#
+def dateclick():
+    queuedate = str(comboday.get()) + str(thai_month.index(combomonth.get())+1) + str(comboyear.get())
+    process0 = querydate(queuedate)
+    process0.run() 
+
+#--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
+strsumroww = IntVar()
+fp = mpl.font_manager.FontProperties(family='Tahoma',size=12)
+fp1 = mpl.font_manager.FontProperties(family='Tahoma',size=20)
+
+#--- ส่วนแสดงผล fm1 ----#
+Label(fm1,text="โปรแกรมร้านกาแฟ", font='tahoma 20').grid(row=0, column=0, pady=20, columnspan=7)
+thai_month = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+Label(fm1, text="วันที่", font="tahoma 16").grid(row=1, column=0, padx=5)
+comboday = ttk.Combobox(fm1, value=list(range(1, 32)), width=2, font="tahoma 16")
+comboday.grid(row=1, column=1, padx=5)
+comboday.set(datex.day)
+Label(fm1, text="เดือน", font="tahoma 16").grid(row=1, column=2, padx=5)
+combomonth = ttk.Combobox(fm1, value=thai_month, width=10, font="tahoma 16")
+combomonth.grid(row=1, column=3, padx=5)
+combomonth.set(thai_month[datex.month-1])
+Label(fm1, text="ปี พ.ศ.", font="tahoma 16").grid(row=1, column=4, padx=5)
+comboyear = ttk.Combobox(fm1, value=list(range(2563,2600)), width=5, font="tahoma 16")
+comboyear.grid(row=1, column=5, padx=5)
+comboyear.set(datex.year+543)
+Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", cursor='hand2').grid(row=1, column=6, padx=5)
+
+#--- ส่วนแสดง fm12 ---#
+Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
+Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, column=1, padx=5)
+bt_pay = Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED)
+bt_pay.grid(row=1, column=2, padx=5)
+Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
+Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5, state=DISABLED).grid(row=2, column=1, pady=10)
+Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
+
 #--- ListBox สำหรับแสดงข้อมูล ---#
 listData = Listbox(fm2, width=70, font="tahoma 16")
 listData.grid(row=2, column=0)
@@ -53,133 +90,107 @@ scroll_y = Scrollbar(fm2, orient=VERTICAL, command=listData.yview)
 scroll_y.grid(row=2, column=1, sticky=N+S)
 listData.config(yscrollcommand=scroll_y.set)
 
-#--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
-strsumroww = IntVar()
 
-#--- ลบข้อมูลใน LISTBOX ---#
-def deletedata():
-    x = listData.size()
-    listData.delete(0, last=x)
+#--- คลาสสำหรับคิวรีข้อมูลรายคิว ---#
+class querydate:
+    def __init__(self, queuedate):
+        self.queuedate = queuedate
 
-def deletedata1():    
-    x = listDatasum.size()
-    listDatasum.delete(0, last=x)
+    def run(self):
+        self.queryqueue()
 
-def deletedata2():    
-    x = listDatasum1.size()
-    listDatasum1.delete(0, last=x)
+    #--- ลบข้อมูลใน LISTBOX ---#
+    def deletedata(self):
+        x = listData.size()
+        listData.delete(0, last=x)
 
-
-#--- คิวรีข้อมูลจากคิว ---#
-def querydata(queuedate, ID, queuestatus):
-    global strsumroww
-    bt_pay.config(command=lambda: updatestatus(queuedate,ID), state=NORMAL)
-    if(int(queuestatus[int(ID)-1][1]) == 1):
+    #--- คิวรีข้อมูลจากคิว ---#
+    def querydata(self, ID, queuestatus):
+        global strsumroww
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        bt_pay.config(command=lambda: self.updatestatus(ID), state=NORMAL)
+        if(int(queuestatus[-(int(ID)-1)][1]) == 1):
             bt_pay.config(state=DISABLED)
 
-    queuedateID = queuedate + str(ID)
-    sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
-    cur.execute(sql, [queuedateID])
-    row = cur.fetchall()
-    deletedata()
-    numlast = len(row)
-    for (u,i) in enumerate(row):
-        listData.insert(END, f'{u+1} จาก {numlast} : {i[1]}               จำนวน {i[2]} หน่วย')
-
-    sql = 'SELECT SUM(price) FROM coffeeorder WHERE ID = ?'
-    cur.execute(sql, [queuedateID])
-    sumrow = cur.fetchone()
-
-    if (sumrow == None):
-        strsumroww.set(0)
-    else:
-        strsumroww.set(sumrow[0])
-
-#--- ลบคิวออกจากฐานข้อมูล ---#
-def deletequeue(queuedate, ID): 
-    global strsumroww
-    queuedateID = queuedate + str(ID)
-    bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {queuedate}')
-    if (bt_delete):
-        sql = 'DELETE FROM coffeeorder WHERE ID = ?'
+        queuedateID = self.queuedate + str(ID)
+        sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
         cur.execute(sql, [queuedateID])
-        con.commit()
-        strsumroww.set(0)
-        listData.delete(0,END)
+        row = cur.fetchall()
+        self.deletedata()
+        numlast = len(row)
+        for (u,i) in enumerate(row):
+            listData.insert(END, f'{u+1} จาก {numlast} : {i[1]}               จำนวน {i[2]} หน่วย')
 
-#--- แก้ไขสถานะการชำระเงิน ---#
-def updatestatus(queuedate, ID):
-    queuedateID = str(queuedate) + str(ID)
-    bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {queuedate}')
-    if(bt_update):
-        sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
+        sql = 'SELECT SUM(price) FROM coffeeorder WHERE ID = ?'
         cur.execute(sql, [queuedateID])
-        con.commit()
-        queryqueue(queuedate)
+        sumrow = cur.fetchone()
+        if (sumrow[0] == None):
+            strsumroww.set(0)
+            bt_pay.config(state=DISABLED)
+        else:
+            strsumroww.set(sumrow[0])
 
-#--- แสดงคิวจากวันที่ ---#
-def queryqueue(queuedate):
-    global strsumroww
-    strsumroww.set(0)
-    sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
-    cur.execute(sql, [queuedate])
-    IDs = cur.fetchall()
-    IDlast = len(IDs)
-    ComboID = ttk.Combobox(fm12, values=list(range(1,IDlast+1)), width=3, font="tahoma 20")
-    ComboID.grid(row=1, column=1, padx=5)
+    #--- ลบคิวออกจากฐานข้อมูล ---#
+    def deletequeue(self, ID): 
+        global strsumroww
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        queuedateID = self.queuedate + str(ID)
+        bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {self.queuedate}')
+        if (bt_delete):
+            sql = 'DELETE FROM coffeeorder WHERE ID = ?'
+            cur.execute(sql, [queuedateID])
+            con.commit()
+            strsumroww.set(0)
+            listData.delete(0,END)
+
+    #--- แก้ไขสถานะการชำระเงิน ---#
+    def updatestatus(self, ID):
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        queuedateID = str(self.queuedate) + str(ID)
+        bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {self.queuedate}')
+        if(bt_update):
+            sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
+            cur.execute(sql, [queuedateID])
+            con.commit()
+            self.queryqueue()
+
+    #--- แสดงคิวจากวันที่ ---#
+    def queryqueue(self):
+        global strsumroww
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        strsumroww.set(0)
+        sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
+        cur.execute(sql, [self.queuedate])
+        IDs = cur.fetchall()
+        IDlast = IDs[-1][0] % int(self.queuedate)
+        ComboID = ttk.Combobox(fm12, values=list(range(1, IDlast+1)), width=3, font="tahoma 20")
+        ComboID.grid(row=1, column=1, padx=5)
     
-    if(IDs == []):
-        deletedata()
-        listData.insert(END, "ไม่มีข้อมูล")
-        ComboID.set(0)
-        numberID = 0
+        if(IDs == []):
+            self.deletedata()
+            listData.insert(END, "ไม่มีข้อมูล")
+            ComboID.set(0)
+            numberID = 0
 
-    else:
-        for i in IDs:
-            if(i[1] == 0):
-                break
-        numberID = int(i[0]) % int(queuedate+"0")
-        ComboID.set(numberID)
-        numberID = ComboID.get()
-        ComboID.bind('<<ComboboxSelected>>', lambda e : querydata(queuedate,ComboID.get(),IDs))
-        querydata(queuedate,ComboID.get(),IDs)
-        bt = Button(fm2, text="ลบคิว", command=lambda: deletequeue(queuedate,numberID), font="tahoma 14", cursor = 'hand2')
-        bt.grid(row=3, column=0)
-        if(int(numberID) == 0):
-            bt.config(state=DISABLED)
-            bt_pay.config(state=DISABLED, text="ชำระเงิน")
+        else:
+            for i in IDs:
+                if(i[1] == 0):
+                    break
+            numberID = int(i[0]) % int(self.queuedate+"0")
+            ComboID.set(numberID)
+            numberID = ComboID.get()
+            ComboID.bind('<<ComboboxSelected>>', lambda e : self.querydata(ComboID.get(), IDs))
+            self.querydata(ComboID.get(), IDs)
+            bt = Button(fm2, text="ลบคิว", command=lambda: self.deletequeue(numberID), font="tahoma 14", cursor = 'hand2')
+            bt.grid(row=3, column=0)
+            if(int(numberID) == 0):
+                bt.config(state=DISABLED)
+                bt_pay.config(state=DISABLED, text="ชำระเงิน")
 
-
-#--- เลือกวันเดือนปี ---#
-def dateclick():
-    queuedate = str(comboday.get()) + str(thai_month.index(combomonth.get())+1) + str(comboyear.get())
-    queryqueue(queuedate)
-
-
-fp = mpl.font_manager.FontProperties(family='Tahoma',size=12)
-fp1 = mpl.font_manager.FontProperties(family='Tahoma',size=20)
-
-#--- แสดงกราฟจากข้อมูล (แท่ง) ---#
-def plot(xplot, xlabelplot, ylabelplot):
-    global fp, fp1
-    xplot = np.arange(1, xplot+1)
-    yplot = ylabelplot
-    ax = plt.gca(yticks=xplot) 
-    ax.set_yticklabels(xlabelplot, fontproperties=fp) 
-    plt.scatter(yplot, xplot)
-    plt.title("จำนวนที่ขายได้ทั้งหมด (หน่วย)", fontproperties=fp1)
-    plt.barh(xplot,yplot, height=.1, zorder=-1)
-    plt.axvline(x=15, color="green", alpha=.5, linestyle="--")
-    plt.axvline(x=5, color="red", alpha=.5, linestyle="--")
-    plt.show()
-
-#--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
-def plotpie(xplot, yplot, xplode):
-    global fp
-    thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode)
-    plt.setp(raikan+kha, fontproperties=fp)
-    plt.show()
-    
 
 #--- Frame ในแท็บสอง ---#
 ffm2 = Frame(frame_tab2)
@@ -194,14 +205,26 @@ scroll_y1 = Scrollbar(ffm2, orient=VERTICAL, command=listDatasum1.yview)
 scroll_y1.grid(row=2, column=2, sticky=N+S)
 listDatasum1.config(yscrollcommand=scroll_y.set)
 
-#---- คิวรีสรุปสินค้าวันนี้ ----#
+
+#---- คลาสสำหรับคิวรีสรุปสินค้าวันนี้ ----#
 class querysummaryone(Thread):
     def __init__(self):
         Thread.__init__(self)
 
+    #--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
+    def plotpie(self, xplot, yplot, xplode):
+        global fp
+        thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode)
+        plt.setp(raikan+kha, fontproperties=fp)
+        plt.show()
+
+    def deletedata2(self):    
+        x = listDatasum1.size()
+        listDatasum1.delete(0, last=x)
+
     def run(self):  
         global datenow
-        deletedata2()
+        self.deletedata2()
         con = sqlite3.connect('coffee.db')
         cur = con.cursor()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder WHERE Date = ?'
@@ -217,10 +240,11 @@ class querysummaryone(Thread):
             yplot.append(row22[0])
             xplode.append(.2)
             listDatasum1.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-        Button(ffm2, text="แสดงกราฟ", command=lambda: plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
+        Button(ffm2, text="แสดงกราฟ", command=lambda: self.plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
+        Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 process1 = querysummaryone()
-Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: process1.start(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
+process1.start()
 
 
 #--- Frame ในแท็บสาม ---#
@@ -236,13 +260,32 @@ scroll_y = Scrollbar(ffm3, orient=VERTICAL, command=listDatasum.yview)
 scroll_y.grid(row=2, column=2, sticky=N+S)
 listDatasum.config(yscrollcommand=scroll_y.set)
 
-#--- คิวรีผลสรุปทั้งหมด ---#
+
+#--- คลาสสำหรับการคิวรีผลสรุปทั้งหมด ---#
 class querysummary(Thread):
     def __init__(self):
         Thread.__init__(self)
 
+    #--- แสดงกราฟจากข้อมูล (แท่ง) ---#
+    def plot(self, xplot, xlabelplot, ylabelplot):
+        global fp, fp1
+        xplot = np.arange(1, xplot+1)
+        yplot = ylabelplot
+        ax = plt.gca(yticks=xplot) 
+        ax.set_yticklabels(xlabelplot, fontproperties=fp) 
+        plt.scatter(yplot, xplot)
+        plt.title("จำนวนที่ขายได้ทั้งหมด (หน่วย)", fontproperties=fp1)
+        plt.barh(xplot,yplot, height=.1, zorder=-1)
+        plt.axvline(x=15, color="green", alpha=.5, linestyle="--")
+        plt.axvline(x=5, color="red", alpha=.5, linestyle="--")
+        plt.show()
+
+    def deletedata1(self):    
+        x = listDatasum.size()
+        listDatasum.delete(0, last=x)
+        
     def run(self):  
-        deletedata1()
+        self.deletedata1()
         con = sqlite3.connect('coffee.db')
         cur = con.cursor()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
@@ -256,10 +299,12 @@ class querysummary(Thread):
             row22 = cur.fetchone()
             ylabelplot.append(row22[0])
             listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
-        Button(ffm3, text="แสดงกราฟ", command= lambda: plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
+        Button(ffm3, text="แสดงกราฟ", command= lambda: self.plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
+        Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 process2 = querysummary()
-Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: process2.start(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
+process2.start()
+
 
 #--- ส่วนแสดงผล Frame 4 ---#
 ffm4 = Frame(frame_tab4)
@@ -272,7 +317,6 @@ ffm41 = Frame(frame_tab4)
 ffm41.grid(row=1, column=0, padx=20, pady=10)
 
 listDataMenu = Listbox(ffm41, width=27, height=15, font="tahoma 16", exportselect=0)
-listDataMenu.bind('<<ListboxSelect>>', lambda e: selectList())
 listDataMenu.grid(row=0, column=0)
 
 scroll_y = Scrollbar(ffm41, orient=VERTICAL, command=listDataMenu.yview)
@@ -297,109 +341,98 @@ Label(ffm42, text="ประเภทสินค้า", font="tahoma 16").grid
 comboCat = ttk.Combobox(ffm42, value=Catlist, width=10, font="tahoma 16")
 comboCat.grid(row=1, column=5, padx=5, pady=20)
 
-#--- เรียกดูข้อมูลเมนูสินค้าจากฐานข้อมูล ---#
-def Read_dataMenu():
-    global dataMenu
-    listDataMenu.delete(0, last=END)
-    dataMenu.clear()
-    sql = 'SELECT * FROM coffeeMenu'
-    cur.execute(sql)
-    row = cur.fetchall()
-    numlast = len(row)
-    for u,i in enumerate(row):
-        dataMenu.append(i)
-        listDataMenu.insert(END,f'{u+1}/{numlast} : {i[0]}')
-Read_dataMenu()
 
-#--- ฟังก์ชัน เรียกข้อมูล จากการคลิกที่ Listbox ---#
-def selectList(e=None):
-    cur_selection = listDataMenu.curselection()
-    index = cur_selection[0]
-    row = dataMenu[index]
-    entry_clear()
-    entry_name.insert(0, row[0])
-    entry_price.insert(0, row[1])
-    comboCat.set(row[3])
+#--- คลาสเรียกดูข้อมูลเมนูสินค้าจากฐานข้อมูล ---#
+class Read_dataMenu(Thread):
+    def __init__(self):
+        listDataMenu.bind('<<ListboxSelect>>', lambda e:  self.selectList())
+        Thread.__init__(self)
 
-#--- ฟังก์ชัน ลบข้อมูล widget ใน ffm42 ---# 
-def entry_clear():
-    entry_name.delete(0, END)
-    entry_price.delete(0, END)
-    comboCat.set('')
-    Read_dataMenu()
+    def run(self):
+        global dataMenu
+        listDataMenu.delete(0, last=END)
+        dataMenu.clear()
+        con = sqlite3.connect('coffee.db')
+        cur = con.cursor()
+        sql = 'SELECT * FROM coffeeMenu'
+        cur.execute(sql)
+        row = cur.fetchall()
+        numlast = len(row)
+        for u,i in enumerate(row):
+            dataMenu.append(i)
+            listDataMenu.insert(END,f'{u+1}/{numlast} : {i[0]}')
+        self.BT()
 
-#--- ฟังก์ชัน บันทึกข้อมูลลงในฐานข้อมูล ---#
-def savedataMenu():
-    global dataMenu
-    stateokupdate = False
-    for i in dataMenu:
-        if(i[0] == entry_name.get()):
-            stateokupdate = True
-            break
+    #--- ฟังก์ชัน เรียกข้อมูล จากการคลิกที่ Listbox ---#
+    def selectList(self, e=None):
+        cur_selection = listDataMenu.curselection()
+        index = cur_selection[0]
+        row = dataMenu[index]
+        self.entry_clear()
+        entry_name.insert(0, row[0])
+        entry_price.insert(0, row[1])
+        comboCat.set(row[3])
 
-    if(stateokupdate):
-        bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
-        sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
-        cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
-        con.commit()
+    #--- ฟังก์ชัน ลบข้อมูล widget ใน ffm42 ---# 
+    def entry_clear(self):
+        entry_name.delete(0, END)
+        entry_price.delete(0, END)
+        comboCat.set('')
+        self.run()
 
-    else:
-        j = 0
+    #--- ฟังก์ชัน บันทึกข้อมูลลงในฐานข้อมูล ---#
+    def savedataMenu(self):
+        global dataMenu
+        stateokupdate = False
         for i in dataMenu:
-            if(i[3]== comboCat.get()):
-                j = j + 1
+            if(i[0] == entry_name.get()):
+                stateokupdate = True
+                break
 
-        sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
-        cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
-        con.commit()
-
-    entry_clear()
-
-#--- ฟังก์ชัน ลบข้อมูลออกจากฐานข้อมูล ---#
-def deletedataMenu():
-    if(entry_name.get() != ''):    
-        bt_delete = messagebox.askokcancel('ยืนยันการลบสินค้า',f'ยืนยันการลบสินค้า {entry_name.get()}')
-        if (bt_delete):
-            sql = 'DELETE FROM coffeeMenu WHERE nameMenu = ?'
-            cur.execute(sql, [entry_name.get()])
+        if(stateokupdate):
+            bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
+            con = sqlite3.connect('coffee.db')
+            cur = con.cursor()
+            sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
+            cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
             con.commit()
-    entry_clear()
 
-#--- ส่วนแสดงปุ่มกด ของ ffm42 ----#
-ffm43 = Frame(ffm42)
-ffm43.grid(row=2, column=0, columnspan=6)
+        else:
+            j = 0
+            for i in dataMenu:
+                if(i[3]== comboCat.get()):
+                    j = j + 1
 
-Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command=entry_clear, cursor='hand2').grid(row=3, column=0, pady=20, padx=15)
-Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command=savedataMenu, cursor='hand2').grid(row=3, column=2, pady=20, padx=15)
-Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
+            con = sqlite3.connect('coffee.db')
+            cur = con.cursor()
+            sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
+            cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
+            con.commit()
 
+        self.entry_clear()
 
-#--- ส่วนแสดงผล fm1 ----#
-Label(fm1,text="โปรแกรมร้านกาแฟ", font='tahoma 20').grid(row=0, column=0, pady=20, columnspan=7)
-thai_month = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-Label(fm1, text="วันที่", font="tahoma 16").grid(row=1, column=0, padx=5)
-comboday = ttk.Combobox(fm1, value=list(range(1, 32)), width=2, font="tahoma 16")
-comboday.grid(row=1, column=1, padx=5)
-comboday.set(datex.day)
-Label(fm1, text="เดือน", font="tahoma 16").grid(row=1, column=2, padx=5)
-combomonth = ttk.Combobox(fm1, value=thai_month, width=10, font="tahoma 16")
-combomonth.grid(row=1, column=3, padx=5)
-combomonth.set(thai_month[datex.month-1])
-Label(fm1, text="ปี พ.ศ.", font="tahoma 16").grid(row=1, column=4, padx=5)
-comboyear = ttk.Combobox(fm1, value=list(range(2563,2600)), width=5, font="tahoma 16")
-comboyear.grid(row=1, column=5, padx=5)
-comboyear.set(datex.year+543)
-Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", cursor='hand2').grid(row=1, column=6, padx=5)
+    #--- ฟังก์ชัน ลบข้อมูลออกจากฐานข้อมูล ---#
+    def deletedataMenu(self):
+        if(entry_name.get() != ''):    
+            bt_delete = messagebox.askokcancel('ยืนยันการลบสินค้า',f'ยืนยันการลบสินค้า {entry_name.get()}')
+            if (bt_delete):
+                con = sqlite3.connect('coffee.db')
+                cur = con.cursor()
+                sql = 'DELETE FROM coffeeMenu WHERE nameMenu = ?'
+                cur.execute(sql, [entry_name.get()])
+                con.commit()
+        self.entry_clear()
 
+    #--- ส่วนแสดงปุ่มกด ของ ffm42 ----#
+    def BT(self):
+        ffm43 = Frame(ffm42)
+        ffm43.grid(row=2, column=0, columnspan=6)
 
-#--- ส่วนแสดง fm12 ---#
-Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
-Entry(fm12, text="0", font="tahoma 20", width=4, state=DISABLED).grid(row=1, column=1, padx=5)
-bt_pay = Button(fm12, text="ชำระเงิน", font="tahoma 16", cursor = 'hand2',state=DISABLED)
-bt_pay.grid(row=1, column=2, padx=5)
-Label(fm12, text="ราคารวม", font="tahoma 20").grid(row=2, column=0, pady=10)
-Entry(fm12, textvariable=strsumroww, font="tahoma 20", width=5, state=DISABLED).grid(row=2, column=1, pady=10)
-Label(fm12, text='บาท', font="tahoma 20").grid(row=2, column=2, pady=10)
+        Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command=self.entry_clear, cursor='hand2').grid(row=3, column=0, pady=20, padx=15)
+        Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command=self.savedataMenu, cursor='hand2').grid(row=3, column=2, pady=20, padx=15)
+        Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=self.deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
 
+process3 = Read_dataMenu()
+process3.start()
 
 mainloop()
