@@ -12,10 +12,6 @@ datex = datetime.now()
 datenow = str(datex.day) + str(datex.month) + str(datex.year+543)
 dataMenu = []
 
-#---- ส่วนติดต่อฐานข้อมูล ---#
-con = sqlite3.connect('coffee.db')
-cur = con.cursor()
-
 #----ส่วนออกแบบLayOut----#
 window = Tk()
 window.resizable(0, 0)
@@ -71,6 +67,8 @@ comboyear = ttk.Combobox(fm1, value=list(range(2563,2600)), width=5, font="tahom
 comboyear.grid(row=1, column=5, padx=5)
 comboyear.set(datex.year+543)
 Button(fm1, text="ยืนยัน", command=dateclick, font="tahoma 16", cursor='hand2').grid(row=1, column=6, padx=5)
+bt = Button(fm2, text="ลบคิว", state=DISABLED, font="tahoma 14", cursor = 'hand2')
+bt.grid(row=3, column=0)
 
 #--- ส่วนแสดง fm12 ---#
 Label(fm12, text="คิวที่ ", font="tahoma 20").grid(row=1, column=0 , pady=5, padx=5)
@@ -109,28 +107,33 @@ class querydate:
         global strsumroww
         con = sqlite3.connect('coffee.db')
         cur = con.cursor()
+        bt.config(command=lambda: self.deletequeue(ID), state=NORMAL)
         bt_pay.config(command=lambda: self.updatestatus(ID), state=NORMAL)
-        if(int(queuestatus[-(int(ID)-1)][1]) == 1):
-            bt_pay.config(state=DISABLED)
 
-        queuedateID = self.queuedate + str(ID)
-        sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
-        cur.execute(sql, [queuedateID])
-        row = cur.fetchall()
-        self.deletedata()
-        numlast = len(row)
-        for (u,i) in enumerate(row):
-            listData.insert(END, f'{u+1} จาก {numlast} : {i[1]}               จำนวน {i[2]} หน่วย')
+        if(queuestatus != []):
+            if(int(queuestatus[-(int(ID)-1)][1]) == 1) :
+                bt_pay.config(state=DISABLED)
 
-        sql = 'SELECT SUM(price) FROM coffeeorder WHERE ID = ?'
-        cur.execute(sql, [queuedateID])
-        sumrow = cur.fetchone()
+            queuedateID = self.queuedate + str(ID)
+            sql = 'SELECT * FROM coffeeorder WHERE ID = ?'
+            cur.execute(sql, [queuedateID])
+            row = cur.fetchall()
+            self.deletedata()
+            numlast = len(row)
+            for (u,i) in enumerate(row):
+                listData.insert(END, f'{u+1} จาก {numlast} : {i[1]}               จำนวน {i[2]} หน่วย')
 
-        if (sumrow[0] == None):
-            strsumroww.set(0)
-            bt_pay.config(state=DISABLED)
-        else:
-            strsumroww.set(sumrow[0])
+            sql = 'SELECT SUM(price) FROM coffeeorder WHERE ID = ?'
+            cur.execute(sql, [queuedateID])
+            sumrow = cur.fetchone()
+
+            if (sumrow[0] == None):
+                strsumroww.set(0)
+                bt.config(state=DISABLED)
+                bt_pay.config(state=DISABLED)
+
+            else:
+                strsumroww.set(sumrow[0])
 
     #--- ลบคิวออกจากฐานข้อมูล ---#
     def deletequeue(self, ID): 
@@ -173,7 +176,7 @@ class querydate:
         if(IDs == []):
             self.deletedata()
             listData.insert(END, "ไม่มีข้อมูล")
-            IDlast = 0
+            IDlast = -1
             numberID = 0
     
         else:
@@ -182,19 +185,17 @@ class querydate:
                     break
 
             IDlast = IDs[-1][0] % int(self.queuedate)
+            numberID = int(i[0]) % int(self.queuedate+"0")
+
         ComboID = ttk.Combobox(fm12, values=list(range(1, IDlast+1)), width=3, font="tahoma 20")
         ComboID.grid(row=1, column=1, padx=5)
-
-        numberID = int(i[0]) % int(self.queuedate+"0")
         ComboID.set(numberID)
-        numberID = ComboID.get()
         ComboID.bind('<<ComboboxSelected>>', lambda e : self.querydata(ComboID.get(), IDs))
         self.querydata(ComboID.get(), IDs)
-        bt = Button(fm2, text="ลบคิว", command=lambda: self.deletequeue(numberID), font="tahoma 14", cursor = 'hand2')
-        bt.grid(row=3, column=0)
-        if(int(numberID) == 0):
+
+        if(numberID == 0):
             bt.config(state=DISABLED)
-            bt_pay.config(state=DISABLED, text="ชำระเงิน")
+            bt_pay.config(state=DISABLED)
 
 
 #--- Frame ในแท็บสอง ---#
