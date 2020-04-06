@@ -125,6 +125,7 @@ class querydate:
         sql = 'SELECT SUM(price) FROM coffeeorder WHERE ID = ?'
         cur.execute(sql, [queuedateID])
         sumrow = cur.fetchone()
+
         if (sumrow[0] == None):
             strsumroww.set(0)
             bt_pay.config(state=DISABLED)
@@ -138,6 +139,7 @@ class querydate:
         cur = con.cursor()
         queuedateID = self.queuedate + str(ID)
         bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {self.queuedate}')
+        
         if (bt_delete):
             sql = 'DELETE FROM coffeeorder WHERE ID = ?'
             cur.execute(sql, [queuedateID])
@@ -151,6 +153,7 @@ class querydate:
         cur = con.cursor()
         queuedateID = str(self.queuedate) + str(ID)
         bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {self.queuedate}')
+
         if(bt_update):
             sql = 'UPDATE coffeeorder SET status = 1 WHERE ID = ?'
             cur.execute(sql, [queuedateID])
@@ -166,30 +169,32 @@ class querydate:
         sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
         cur.execute(sql, [self.queuedate])
         IDs = cur.fetchall()
-        IDlast = IDs[-1][0] % int(self.queuedate)
-        ComboID = ttk.Combobox(fm12, values=list(range(1, IDlast+1)), width=3, font="tahoma 20")
-        ComboID.grid(row=1, column=1, padx=5)
-    
+        
         if(IDs == []):
             self.deletedata()
             listData.insert(END, "ไม่มีข้อมูล")
-            ComboID.set(0)
+            IDlast = 0
             numberID = 0
-
+    
         else:
             for i in IDs:
                 if(i[1] == 0):
                     break
-            numberID = int(i[0]) % int(self.queuedate+"0")
-            ComboID.set(numberID)
-            numberID = ComboID.get()
-            ComboID.bind('<<ComboboxSelected>>', lambda e : self.querydata(ComboID.get(), IDs))
-            self.querydata(ComboID.get(), IDs)
-            bt = Button(fm2, text="ลบคิว", command=lambda: self.deletequeue(numberID), font="tahoma 14", cursor = 'hand2')
-            bt.grid(row=3, column=0)
-            if(int(numberID) == 0):
-                bt.config(state=DISABLED)
-                bt_pay.config(state=DISABLED, text="ชำระเงิน")
+
+            IDlast = IDs[-1][0] % int(self.queuedate)
+        ComboID = ttk.Combobox(fm12, values=list(range(1, IDlast+1)), width=3, font="tahoma 20")
+        ComboID.grid(row=1, column=1, padx=5)
+
+        numberID = int(i[0]) % int(self.queuedate+"0")
+        ComboID.set(numberID)
+        numberID = ComboID.get()
+        ComboID.bind('<<ComboboxSelected>>', lambda e : self.querydata(ComboID.get(), IDs))
+        self.querydata(ComboID.get(), IDs)
+        bt = Button(fm2, text="ลบคิว", command=lambda: self.deletequeue(numberID), font="tahoma 14", cursor = 'hand2')
+        bt.grid(row=3, column=0)
+        if(int(numberID) == 0):
+            bt.config(state=DISABLED)
+            bt_pay.config(state=DISABLED, text="ชำระเงิน")
 
 
 #--- Frame ในแท็บสอง ---#
