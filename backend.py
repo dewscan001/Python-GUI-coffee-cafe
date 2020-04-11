@@ -46,6 +46,12 @@ def dateclick():
     process0 = querydate(queuedate)
     process0.run() 
 
+#--- ฐานข้อมูล ---#
+def databases():
+    con = sqlite3.connect('coffee.db')
+    cur = con.cursor()
+    return con, cur
+
 #--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
 strsumroww = IntVar()
 fp = mpl.font_manager.FontProperties(family='Tahoma',size=12)
@@ -105,8 +111,7 @@ class querydate:
     #--- คิวรีข้อมูลจากคิว ---#
     def querydata(self, ID, queuestatus):
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         bt.config(command=lambda: self.deletequeue(ID), state=NORMAL)
         bt_pay.config(command=lambda: self.updatestatus(ID), state=NORMAL)
 
@@ -138,8 +143,7 @@ class querydate:
     #--- ลบคิวออกจากฐานข้อมูล ---#
     def deletequeue(self, ID): 
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         queuedateID = self.queuedate + str(ID)
         bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {self.queuedate}')
         
@@ -152,8 +156,7 @@ class querydate:
 
     #--- แก้ไขสถานะการชำระเงิน ---#
     def updatestatus(self, ID):
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         queuedateID = str(self.queuedate) + str(ID)
         bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {self.queuedate}')
 
@@ -166,8 +169,7 @@ class querydate:
     #--- แสดงคิวจากวันที่ ---#
     def queryqueue(self):
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         strsumroww.set(0)
         sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
         cur.execute(sql, [self.queuedate])
@@ -229,10 +231,8 @@ class querysummaryone(Thread):
         listDatasum1.delete(0, last=x)
 
     def run(self):  
-        global datenow
         self.deletedata2()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder WHERE Date = ?'
         cur.execute(sql21, [datenow])
         xplot = cur.fetchall()
@@ -292,8 +292,7 @@ class querysummary(Thread):
         
     def run(self):  
         self.deletedata1()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
         cur.execute(sql21)
         xlabelplot = cur.fetchall()
@@ -358,8 +357,7 @@ class Read_dataMenu(Thread):
         global dataMenu
         listDataMenu.delete(0, last=END)
         dataMenu.clear()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql = 'SELECT * FROM coffeeMenu'
         cur.execute(sql)
         row = cur.fetchall()
@@ -394,26 +392,24 @@ class Read_dataMenu(Thread):
             if(i[0] == entry_name.get()):
                 stateokupdate = True
                 break
+        if(entry_name.get() != ''):
+            if(stateokupdate):
+                bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
+                con, cur = databases()
+                sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
+                cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
+                con.commit()
 
-        if(stateokupdate):
-            bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
-            con = sqlite3.connect('coffee.db')
-            cur = con.cursor()
-            sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
-            cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
-            con.commit()
+            else:
+                j = 0
+                for i in dataMenu:
+                    if(i[3]== comboCat.get()):
+                        j = j + 1
 
-        else:
-            j = 0
-            for i in dataMenu:
-                if(i[3]== comboCat.get()):
-                    j = j + 1
-
-            con = sqlite3.connect('coffee.db')
-            cur = con.cursor()
-            sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
-            cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
-            con.commit()
+                con, cur = databases()
+                sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
+                cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
+                con.commit()
 
         self.entry_clear()
 
@@ -422,8 +418,7 @@ class Read_dataMenu(Thread):
         if(entry_name.get() != ''):    
             bt_delete = messagebox.askokcancel('ยืนยันการลบสินค้า',f'ยืนยันการลบสินค้า {entry_name.get()}')
             if (bt_delete):
-                con = sqlite3.connect('coffee.db')
-                cur = con.cursor()
+                con, cur = databases()
                 sql = 'DELETE FROM coffeeMenu WHERE nameMenu = ?'
                 cur.execute(sql, [entry_name.get()])
                 con.commit()
