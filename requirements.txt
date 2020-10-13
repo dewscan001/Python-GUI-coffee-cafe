@@ -1,0 +1,4 @@
+matplotlib
+numpy
+pyinstaller
+cffi==1.14.0

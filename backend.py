@@ -1,4 +1,3 @@
-from threading import Thread
 import sqlite3
 from datetime import datetime
 from tkinter import *
@@ -215,9 +214,7 @@ listDatasum1.config(yscrollcommand=scroll_y.set)
 
 
 #---- คลาสสำหรับคิวรีสรุปสินค้าวันนี้ ----#
-class querysummaryone(Thread):
-    def __init__(self):
-        Thread.__init__(self)
+class querysummaryone():
 
     #--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
     def plotpie(self, xplot, yplot, xplode):
@@ -249,9 +246,6 @@ class querysummaryone(Thread):
         Button(ffm2, text="แสดงกราฟ", command=lambda: self.plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
         Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
-process1 = querysummaryone()
-process1.start()
-
 
 #--- Frame ในแท็บสาม ---#
 ffm3 = Frame(frame_tab3)
@@ -268,9 +262,7 @@ listDatasum.config(yscrollcommand=scroll_y.set)
 
 
 #--- คลาสสำหรับการคิวรีผลสรุปทั้งหมด ---#
-class querysummary(Thread):
-    def __init__(self):
-        Thread.__init__(self)
+class querysummary():
 
     #--- แสดงกราฟจากข้อมูล (แท่ง) ---#
     def plot(self, xplot, xlabelplot, ylabelplot):
@@ -306,10 +298,6 @@ class querysummary(Thread):
             listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
         Button(ffm3, text="แสดงกราฟ", command= lambda: self.plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
         Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
-
-process2 = querysummary()
-process2.start()
-
 
 #--- ส่วนแสดงผล Frame 4 ---#
 ffm4 = Frame(frame_tab4)
@@ -348,10 +336,9 @@ comboCat.grid(row=1, column=5, padx=5, pady=20)
 
 
 #--- คลาสเรียกดูข้อมูลเมนูสินค้าจากฐานข้อมูล ---#
-class Read_dataMenu(Thread):
+class Read_dataMenu():
     def __init__(self):
         listDataMenu.bind('<<ListboxSelect>>', lambda e:  self.selectList())
-        Thread.__init__(self)
 
     def run(self):
         global dataMenu
@@ -432,8 +419,5 @@ class Read_dataMenu(Thread):
         Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command=self.entry_clear, cursor='hand2').grid(row=3, column=0, pady=20, padx=15)
         Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command=self.savedataMenu, cursor='hand2').grid(row=3, column=2, pady=20, padx=15)
         Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=self.deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
-
-process3 = Read_dataMenu()
-process3.start()
 
 mainloop()
