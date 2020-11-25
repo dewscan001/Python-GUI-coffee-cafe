@@ -17,7 +17,7 @@ if (datex.weekday() == 6):
     weekday = 0
 else:
     weekday = datex.weekday()+1
-                                                                                                                                                                                                                                  
+
 #----ส่วนออกแบบLayOut----#
 window = Tk()
 window.resizable(0, 0)
@@ -28,7 +28,7 @@ fm1.grid(row=1, column=0, pady=10)
 fm12 = LabelFrame(window)
 fm12.grid(row=1, column=1, padx=10, pady=10)
 fm2 = LabelFrame(window)
-fm2.grid(row=2, column=0, pady=10, padx=15, sticky=N, columnspan=2)                                                                                                                                                                                                                                                                                                                                                                                                                                                
+fm2.grid(row=2, column=0, pady=10, padx=15, sticky=N, columnspan=2)
 fm22 = Frame(fm12)
 fm22.grid(row=3, column=0, columnspan=3, pady=15)
 
