@@ -1,3 +1,4 @@
+from threading import Thread
 import sqlite3
 from datetime import datetime
 from tkinter import *
@@ -44,6 +45,12 @@ def dateclick():
     queuedate = str(comboday.get()) + str(thai_month.index(combomonth.get())+1) + str(comboyear.get())
     process0 = querydate(queuedate)
     process0.run() 
+
+#--- ฐานข้อมูล ---#
+def databases():
+    con = sqlite3.connect('coffee.db')
+    cur = con.cursor()
+    return con, cur
 
 #--- ตัวแปรสำหรับเก็บค่าราคารวม ---#
 strsumroww = IntVar()
@@ -104,8 +111,7 @@ class querydate:
     #--- คิวรีข้อมูลจากคิว ---#
     def querydata(self, ID, queuestatus):
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         bt.config(command=lambda: self.deletequeue(ID), state=NORMAL)
         bt_pay.config(command=lambda: self.updatestatus(ID), state=NORMAL)
 
@@ -137,8 +143,7 @@ class querydate:
     #--- ลบคิวออกจากฐานข้อมูล ---#
     def deletequeue(self, ID): 
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         queuedateID = self.queuedate + str(ID)
         bt_delete = messagebox.askokcancel('ยืนยันการลบคิว',f'ยืนยันการลบข้อมูลของคิว {ID} ในวันที่ {self.queuedate}')
         
@@ -151,8 +156,7 @@ class querydate:
 
     #--- แก้ไขสถานะการชำระเงิน ---#
     def updatestatus(self, ID):
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         queuedateID = str(self.queuedate) + str(ID)
         bt_update = messagebox.askokcancel('ยืนยันการชำระเงิน',f'ยืนยันการชำระเงินของคิว {ID} ในวันที่ {self.queuedate}')
 
@@ -165,8 +169,7 @@ class querydate:
     #--- แสดงคิวจากวันที่ ---#
     def queryqueue(self):
         global strsumroww
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         strsumroww.set(0)
         sql = 'SELECT DISTINCT(ID),status FROM coffeeorder WHERE Date = ?'
         cur.execute(sql, [self.queuedate])
@@ -212,7 +215,9 @@ listDatasum1.config(yscrollcommand=scroll_y.set)
 
 
 #---- คลาสสำหรับคิวรีสรุปสินค้าวันนี้ ----#
-class querysummaryone():
+class querysummaryone(Thread):
+    def __init__(self):
+        Thread.__init__(self)
 
     #--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
     def plotpie(self, xplot, yplot, xplode):
@@ -226,10 +231,8 @@ class querysummaryone():
         listDatasum1.delete(0, last=x)
 
     def run(self):  
-        global datenow
         self.deletedata2()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder WHERE Date = ?'
         cur.execute(sql21, [datenow])
         xplot = cur.fetchall()
@@ -245,6 +248,9 @@ class querysummaryone():
             listDatasum1.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
         Button(ffm2, text="แสดงกราฟ", command=lambda: self.plotpie(xplot,yplot,xplode), cursor='hand2', font="tahoma 16").grid(row=5, column=1, pady=20)
         Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
+
+process1 = querysummaryone()
+process1.start()
 
 
 #--- Frame ในแท็บสาม ---#
@@ -262,7 +268,9 @@ listDatasum.config(yscrollcommand=scroll_y.set)
 
 
 #--- คลาสสำหรับการคิวรีผลสรุปทั้งหมด ---#
-class querysummary():
+class querysummary(Thread):
+    def __init__(self):
+        Thread.__init__(self)
 
     #--- แสดงกราฟจากข้อมูล (แท่ง) ---#
     def plot(self, xplot, xlabelplot, ylabelplot):
@@ -284,8 +292,7 @@ class querysummary():
         
     def run(self):  
         self.deletedata1()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
         cur.execute(sql21)
         xlabelplot = cur.fetchall()
@@ -299,6 +306,10 @@ class querysummary():
             listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
         Button(ffm3, text="แสดงกราฟ", command= lambda: self.plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
         Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
+
+process2 = querysummary()
+process2.start()
+
 
 #--- ส่วนแสดงผล Frame 4 ---#
 ffm4 = Frame(frame_tab4)
@@ -337,16 +348,16 @@ comboCat.grid(row=1, column=5, padx=5, pady=20)
 
 
 #--- คลาสเรียกดูข้อมูลเมนูสินค้าจากฐานข้อมูล ---#
-class Read_dataMenu():
+class Read_dataMenu(Thread):
     def __init__(self):
         listDataMenu.bind('<<ListboxSelect>>', lambda e:  self.selectList())
+        Thread.__init__(self)
 
     def run(self):
         global dataMenu
         listDataMenu.delete(0, last=END)
         dataMenu.clear()
-        con = sqlite3.connect('coffee.db')
-        cur = con.cursor()
+        con, cur = databases()
         sql = 'SELECT * FROM coffeeMenu'
         cur.execute(sql)
         row = cur.fetchall()
@@ -381,26 +392,24 @@ class Read_dataMenu():
             if(i[0] == entry_name.get()):
                 stateokupdate = True
                 break
+        if(entry_name.get() != ''):
+            if(stateokupdate):
+                bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
+                con, cur = databases()
+                sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
+                cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
+                con.commit()
 
-        if(stateokupdate):
-            bt_save = messagebox.askokcancel('ยืนยันการแก้ไขสินค้า',f'ยืนยันการแก้ไขสินค้า {entry_name.get()}')
-            con = sqlite3.connect('coffee.db')
-            cur = con.cursor()
-            sql = 'UPDATE coffeeMenu SET priceMenu = ?, catMenu = ? WHERE nameMenu = ?'
-            cur.execute(sql, [entry_price.get(), comboCat.get(), entry_name.get()])
-            con.commit()
+            else:
+                j = 0
+                for i in dataMenu:
+                    if(i[3]== comboCat.get()):
+                        j = j + 1
 
-        else:
-            j = 0
-            for i in dataMenu:
-                if(i[3]== comboCat.get()):
-                    j = j + 1
-
-            con = sqlite3.connect('coffee.db')
-            cur = con.cursor()
-            sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
-            cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
-            con.commit()
+                con, cur = databases()
+                sql = 'INSERT INTO coffeeMenu VALUES (?,?,?,?,?)'
+                cur.execute(sql, [entry_name.get(), entry_price.get(), 0, comboCat.get(), j])
+                con.commit()
 
         self.entry_clear()
 
@@ -409,8 +418,7 @@ class Read_dataMenu():
         if(entry_name.get() != ''):    
             bt_delete = messagebox.askokcancel('ยืนยันการลบสินค้า',f'ยืนยันการลบสินค้า {entry_name.get()}')
             if (bt_delete):
-                con = sqlite3.connect('coffee.db')
-                cur = con.cursor()
+                con, cur = databases()
                 sql = 'DELETE FROM coffeeMenu WHERE nameMenu = ?'
                 cur.execute(sql, [entry_name.get()])
                 con.commit()
@@ -424,5 +432,8 @@ class Read_dataMenu():
         Button(ffm43, text="เพิ่มข้อมูล", font="tahoma 16", command=self.entry_clear, cursor='hand2').grid(row=3, column=0, pady=20, padx=15)
         Button(ffm43, text="บันทึกข้อมูล", font="tahoma 16", command=self.savedataMenu, cursor='hand2').grid(row=3, column=2, pady=20, padx=15)
         Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=self.deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
+
+process3 = Read_dataMenu()
+process3.start()
 
 mainloop()
