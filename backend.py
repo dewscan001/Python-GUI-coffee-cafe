@@ -1,4 +1,4 @@
-from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 import sqlite3
 from datetime import datetime
 from tkinter import *
@@ -44,7 +44,7 @@ fm2.grid(row=1, column=0, pady=10, padx=15, sticky=N, columnspan=3)
 def dateclick():
     queuedate = str(comboday.get()) + str(thai_month.index(combomonth.get())+1) + str(comboyear.get())
     process0 = querydate(queuedate)
-    process0.run() 
+    ThreadPoolExecutor().submit(process0.run) 
 
 #--- ฐานข้อมูล ---#
 def databases():
@@ -215,14 +215,12 @@ listDatasum1.config(yscrollcommand=scroll_y.set)
 
 
 #---- คลาสสำหรับคิวรีสรุปสินค้าวันนี้ ----#
-class querysummaryone(Thread):
-    def __init__(self):
-        Thread.__init__(self)
+class querysummaryone():
 
     #--- แสดงกราฟจากข้อมูลในวันนี้ (วงกลม) ---#
     def plotpie(self, xplot, yplot, xplode):
         global fp
-        thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode)
+        thaep, raikan, kha = plt.pie(yplot, labels=xplot, autopct='%d%%', shadow=1, counterclock=0, startangle=90, explode=xplode, normalize=True)
         plt.setp(raikan+kha, fontproperties=fp)
         plt.show()
 
@@ -250,7 +248,7 @@ class querysummaryone(Thread):
         Button(ffm2, text="รีเฟรชข้อมูล", command=lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 process1 = querysummaryone()
-process1.start()
+ThreadPoolExecutor().submit(process1.run)
 
 
 #--- Frame ในแท็บสาม ---#
@@ -268,10 +266,8 @@ listDatasum.config(yscrollcommand=scroll_y.set)
 
 
 #--- คลาสสำหรับการคิวรีผลสรุปทั้งหมด ---#
-class querysummary(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-
+class querysummary():
+    
     #--- แสดงกราฟจากข้อมูล (แท่ง) ---#
     def plot(self, xplot, xlabelplot, ylabelplot):
         global fp, fp1
@@ -295,20 +291,22 @@ class querysummary(Thread):
         con, cur = databases()
         sql21 = 'SELECT DISTINCT(Corder) FROM coffeeorder'
         cur.execute(sql21)
-        xlabelplot = cur.fetchall()
+        row = cur.fetchall()
+        xlabelplot = []
         ylabelplot = []
-        numlast = len(xlabelplot)
-        for (u,i) in enumerate(xlabelplot):
+        numlast = len(row)
+        for (u,i) in enumerate(row):
             sql22 = 'SELECT SUM(number) FROM coffeeorder WHERE Corder = ?'
             cur.execute(sql22, i)
             row22 = cur.fetchone()
+            xlabelplot.append(i[0])
             ylabelplot.append(row22[0])
             listDatasum.insert(END, f'{u+1} จากทั้งหมด {numlast} : ชื่อสินค้า : {i[0]}         ขายได้ทั้งหมด {row22[0]} หน่วย')
         Button(ffm3, text="แสดงกราฟ", command= lambda: self.plot(listDatasum.size(), xlabelplot, ylabelplot), font="tahoma 16", cursor = 'hand2').grid(row=5, column=1, pady=20)
         Button(ffm3, text="รีเฟรชข้อมูล", command= lambda: self.run(), font="tahoma 16", cursor='hand2').grid(row=5, column=0, pady=20)
 
 process2 = querysummary()
-process2.start()
+ThreadPoolExecutor().submit(process2.run)
 
 
 #--- ส่วนแสดงผล Frame 4 ---#
@@ -348,10 +346,9 @@ comboCat.grid(row=1, column=5, padx=5, pady=20)
 
 
 #--- คลาสเรียกดูข้อมูลเมนูสินค้าจากฐานข้อมูล ---#
-class Read_dataMenu(Thread):
+class Read_dataMenu():
     def __init__(self):
         listDataMenu.bind('<<ListboxSelect>>', lambda e:  self.selectList())
-        Thread.__init__(self)
 
     def run(self):
         global dataMenu
@@ -434,6 +431,6 @@ class Read_dataMenu(Thread):
         Button(ffm43, text="ลบข้อมูล", font="tahoma 16",  command=self.deletedataMenu, cursor='hand2').grid(row=3, column=4, pady=20, padx=15)
 
 process3 = Read_dataMenu()
-process3.start()
+ThreadPoolExecutor().submit(process3.run)
 
 mainloop()
